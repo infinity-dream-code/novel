@@ -302,181 +302,77 @@ function showPrivacyInfo() {
 
 // Function to get device model from userAgent
 function getDeviceModel(userAgent) {
-  // Default value if nothing is detected
   let deviceModel = "Unknown";
-  let deviceBrand = "";
-  let deviceName = "";
-  let osVersion = "";
   
-  // Extract Android version if present
-  const androidVersionMatch = userAgent.match(/Android\s+([\d\.]+)/i);
-  if (androidVersionMatch) {
-    osVersion = androidVersionMatch[1];
-  }
-  
-  // Extract iOS version if present
-  const iosVersionMatch = userAgent.match(/OS\s+(\d+[_\.]\d+[_\.]*\d*)/i);
-  if (iosVersionMatch) {
-    osVersion = iosVersionMatch[1].replace(/_/g, '.');
-  }
-  
-  // DEVICE BRAND DETECTION
-  // Check for common device manufacturers in user agent
-  const brandPatterns = [
-    { pattern: /samsung|SM-|SAMSUNG/i, brand: "Samsung" },
-    { pattern: /xiaomi|redmi|poco/i, brand: "Xiaomi" },
-    { pattern: /huawei|honor|hry-|jny-|lya-|vog-/i, brand: "Huawei" },
-    { pattern: /oppo|cph|pct|pcrm|pdvm|pcgm/i, brand: "OPPO" },
-    { pattern: /vivo|pd\d+/i, brand: "Vivo" },
-    { pattern: /oneplus|hd1905|kb2005|le2115|le2120/i, brand: "OnePlus" },
-    { pattern: /realme|rmx|rmp/i, brand: "Realme" },
-    { pattern: /nokia|ta-\d+/i, brand: "Nokia" },
-    { pattern: /motorola|moto/i, brand: "Motorola" },
-    { pattern: /lg|lm-/i, brand: "LG" },
-    { pattern: /sony|xperia/i, brand: "Sony" },
-    { pattern: /asus|zenfone/i, brand: "Asus" },
-    { pattern: /htc/i, brand: "HTC" },
-    { pattern: /lenovo/i, brand: "Lenovo" },
-    { pattern: /meizu/i, brand: "Meizu" },
-    { pattern: /zte/i, brand: "ZTE" },
-    { pattern: /tecno/i, brand: "TECNO" },
-    { pattern: /infinix/i, brand: "Infinix" },
-    { pattern: /alcatel/i, brand: "Alcatel" },
-    { pattern: /iphone/i, brand: "Apple" },
-    { pattern: /ipad/i, brand: "Apple" },
-    { pattern: /pixel|google/i, brand: "Google" }
-  ];
-
-  // Try to detect the brand
-  for (const brandItem of brandPatterns) {
-    if (brandItem.pattern.test(userAgent)) {
-      deviceBrand = brandItem.brand;
-      break;
+  // For Android devices - enhanced detection
+  if (/Android/.test(userAgent)) {
+    // Try to extract more specific model information
+    // Look for common patterns in Android user agents
+    
+    // Pattern 1: Brand/Model format (common in many Android UAs)
+    let matches = userAgent.match(/Android\s+[\d\.]+;\s*([^;)]+)/i);
+    
+    // Pattern 2: More specific for Xiaomi/Redmi and other brands
+    if (userAgent.includes("Redmi") || userAgent.includes("XiaoMi") || userAgent.includes("MIUI")) {
+      matches = userAgent.match(/Android\s+[\d\.]+;[\s\w\-;]*\s+(Redmi\s+[^;)]+)/i);
+      if (!matches) {
+        matches = userAgent.match(/Android\s+[\d\.]+;[\s\w\-;]*\s+(Mi\s+[^;)]+)/i);
+      }
     }
-  }
-
-  // DEVICE MODEL DETECTION STRATEGIES
-  // Array of detection strategies, ordered by reliability
-  const detectionStrategies = [
-    // Strategy 1: Look for model codes in common formats
-    function() {
-      // Samsung pattern (SM-XXXX)
-      if (deviceBrand === "Samsung") {
-        const samsungMatch = userAgent.match(/SM-[A-Z0-9]+/i);
-        if (samsungMatch) return samsungMatch[0];
-      }
-      
-      // Xiaomi/Redmi specific patterns
-      if (deviceBrand === "Xiaomi") {
-        // Look for Redmi patterns
-        const redmiMatch = userAgent.match(/Redmi\s+([^;)\/]+)/i);
-        if (redmiMatch) return `Redmi ${redmiMatch[1].trim()}`;
-        
-        // Look for POCO patterns
-        const pocoMatch = userAgent.match(/POCO\s+([^;)\/]+)/i);
-        if (pocoMatch) return `POCO ${pocoMatch[1].trim()}`;
-        
-        // Look for Mi patterns
-        const miMatch = userAgent.match(/Mi\s+([^;)\/]+)/i);
-        if (miMatch) return `Mi ${miMatch[1].trim()}`;
-      }
-      
-      return null;
-    },
     
-    // Strategy 2: Look for "Build/" pattern which often comes after model
-    function() {
-      const buildMatch = userAgent.match(/([^;]+)\s+Build\//i);
-      if (buildMatch && buildMatch[1] && buildMatch[1].trim() !== 'Android') {
-        return buildMatch[1].trim();
-      }
-      return null;
-    },
-    
-    // Strategy 3: Look for model in parentheses 
-    function() {
-      const parenthesesMatch = userAgent.match(/;\s*([^;)]+)\)/);
-      if (parenthesesMatch && parenthesesMatch[1] && !/^\s*$/.test(parenthesesMatch[1]) && !/Android/.test(parenthesesMatch[1])) {
-        return parenthesesMatch[1].trim();
-      }
-      return null;
-    },
-    
-    // Strategy 4: Extract from standard format after Android version
-    function() {
-      const standardMatch = userAgent.match(/Android\s+[\d\.]+;\s*([^;)]+)/i);
-      if (standardMatch && standardMatch[1] && standardMatch[1].trim() !== 'K') {
-        return standardMatch[1].trim();
-      }
-      return null;
-    },
-    
-    // Strategy 5: Look between Android and parentheses
-    function() {
-      const complexMatch = userAgent.match(/Android[^;]+;\s+([^)]+)/);
-      if (complexMatch && complexMatch[1] && complexMatch[1].length > 1 && complexMatch[1] !== 'K') {
-        return complexMatch[1].trim().split(';')[0].trim();
-      }
-      return null;
+    // Pattern 3: Look for Build/ pattern which often precedes specific model info
+    if (!matches || matches[1].trim() === "") {
+      matches = userAgent.match(/;\s*([^;]+)\s+Build\//i);
     }
-  ];
-  
-  // Try each detection strategy until one works
-  for (const strategy of detectionStrategies) {
-    const result = strategy();
-    if (result) {
-      deviceName = result;
-      break;
+    
+    // Pattern 4: Samsung specific pattern
+    if (userAgent.includes("Samsung") || userAgent.includes("SM-")) {
+      matches = userAgent.match(/Android\s+[\d\.]+;[\s\w\-;]*\s+(SM-[A-Z0-9]+)/i);
     }
-  }
-  
-  // If we have a brand but no model, provide a generic model based on brand
-  if (deviceBrand && !deviceName) {
-    if (deviceBrand === "Apple") {
-      if (/iPhone/i.test(userAgent)) {
-        deviceName = "iPhone";
-      } else if (/iPad/i.test(userAgent)) {
-        deviceName = "iPad";
-      } else {
-        deviceName = "iOS Device";
-      }
+    
+    // Extract Android version
+    const versionMatch = userAgent.match(/Android\s+([\d\.]+)/i);
+    const androidVersion = versionMatch ? versionMatch[1] : '';
+    
+    if (matches && matches[1]) {
+      deviceModel = `${matches[1].trim()} (Android ${androidVersion})`;
     } else {
-      deviceName = `${deviceBrand} Device`;
+      deviceModel = `Android ${androidVersion} Device`;
     }
   }
-  
-  // Special case handling for Xiaomi/Redmi with "K" identifier
-  if ((deviceName === "K" || !deviceName) && /Android\s+10/i.test(userAgent)) {
-    // Based on your example, if it's Android 10 with K identifier, assume it's Redmi Note 12 Pro 4G
-    deviceBrand = "Xiaomi";
-    deviceName = "Xiaomi";
+  // For iOS devices
+  else if (/iPhone/.test(userAgent)) {
+    const matches = userAgent.match(/iPhone\s*(?:OS\s*)?(\d+[_,\d]*)/i);
+    deviceModel = matches ? `iPhone (iOS ${matches[1].replace(/_/g, '.')})`  : "iPhone";
+  } 
+  else if (/iPad/.test(userAgent)) {
+    const matches = userAgent.match(/iPad\s*(?:OS\s*)?(\d+[_,\d]*)/i);
+    deviceModel = matches ? `iPad (iOS ${matches[1].replace(/_/g, '.')})`  : "iPad";
   }
-  
-  // CONSTRUCT FINAL DEVICE MODEL STRING
-  if (deviceBrand && deviceName) {
-    // If brand is already in device name, don't duplicate it
-    if (deviceName.includes(deviceBrand)) {
-      deviceModel = deviceName;
-    } else {
-      deviceModel = `${deviceBrand} ${deviceName}`;
-    }
-  } else if (deviceName) {
-    deviceModel = deviceName;
-  } else if (deviceBrand) {
-    deviceModel = `${deviceBrand} Device`;
+  // For Windows devices
+  else if (/Windows NT/.test(userAgent)) {
+    const matches = userAgent.match(/Windows NT\s+([0-9.]+)/i);
+    const versionMap = {
+      '10.0': '10', '6.3': '8.1', '6.2': '8', '6.1': '7', '6.0': 'Vista', '5.2': 'XP x64', '5.1': 'XP'
+    };
+    const windowsVersion = matches ? versionMap[matches[1]] || matches[1] : '';
+    deviceModel = windowsVersion ? `Windows ${windowsVersion}` : "Windows";
   }
-  
-  // Add OS version if available
-  if (osVersion) {
-    if (/iPhone|iPad|iOS Device/i.test(deviceModel)) {
-      deviceModel += ` (iOS ${osVersion})`;
-    } else if (androidVersionMatch) {
-      deviceModel += ` (Android ${osVersion})`;
-    }
+  // For macOS devices
+  else if (/Macintosh/.test(userAgent)) {
+    const matches = userAgent.match(/Macintosh;\s*(?:Intel\s*)?Mac OS X\s*([0-9_\.]+)/i);
+    deviceModel = matches ? `Mac (macOS ${matches[1].replace(/_/g, '.')})` : "Mac";
+  }
+  // For Linux devices
+  else if (/Linux/.test(userAgent)) {
+    deviceModel = "Linux";
+    if (/Ubuntu/.test(userAgent)) deviceModel = "Ubuntu Linux";
+    if (/Fedora/.test(userAgent)) deviceModel = "Fedora Linux";
   }
   
   return deviceModel;
 }
+
 // Function to get device information
 async function getDeviceInfo() {
   // Default information
