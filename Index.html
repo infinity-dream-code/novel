@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permainan Detektif - Mystery Case</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pulse-red {
+            animation: pulseRed 1s infinite;
+        }
+        @keyframes pulseRed {
+            0%, 100% { color: rgb(239, 68, 68); }
+            50% { color: rgb(185, 28, 28); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Timer -->
+    <div class="fixed top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+        <div class="text-sm font-bold">Waktu Tersisa</div>
+        <div id="timer" class="text-2xl font-mono pulse-red">10:00</div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8 fade-in">
+            <h1 class="text-4xl font-bold text-yellow-400 mb-2">🔍 MYSTERY CASE</h1>
+            <p class="text-xl text-gray-300">Kasus Pembunuhan di Mansion Blackwood</p>
+        </div>
+
+        <!-- Game Area -->
+        <div id="gameArea" class="max-w-4xl mx-auto">
+            <!-- Story Introduction -->
+            <div id="story" class="bg-gray-800 rounded-lg p-6 mb-6 fade-in">
+                <h2 class="text-2xl font-bold mb-4 text-red-400">📋 Kasus yang Harus Diselesaikan</h2>
+                <div class="bg-gray-700 p-4 rounded-lg mb-4">
+                    <p class="text-gray-200 leading-relaxed">
+                        <strong>Korban:</strong> Lord William Blackwood (65 tahun)<br>
+                        <strong>Lokasi:</strong> Perpustakaan pribadi di Mansion Blackwood<br>
+                        <strong>Waktu:</strong> Kemarin malam, sekitar pukul 22:00<br>
+                        <strong>Penyebab Kematian:</strong> Racun arsenik dalam wine<br><br>
+                        
+                        Lord Blackwood ditemukan tewas di kursi bacanya dengan segelas wine di meja. 
+                        Ada 4 tersangka yang berada di mansion saat kejadian. 
+                        Tugas Anda adalah menemukan pembunuh sebenarnya!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Suspects -->
+            <div class="bg-gray-800 rounded-lg p-6 mb-6 fade-in">
+                <h2 class="text-2xl font-bold mb-4 text-blue-400">👥 Para Tersangka</h2>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <h3 class="font-bold text-yellow-300">1. Lady Margaret Blackwood</h3>
+                        <p class="text-sm text-gray-300">Istri kedua Lord Blackwood. Menikah 2 tahun lalu. Diketahui sering bertengkar soal warisan.</p>
+                    </div>
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <h3 class="font-bold text-yellow-300">2. James Blackwood</h3>
+                        <p class="text-sm text-gray-300">Anak dari pernikahan pertama. Memiliki utang judi yang besar dan butuh uang.</p>
+                    </div>
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <h3 class="font-bold text-yellow-300">3. Dr. Samuel Richards</h3>
+                        <p class="text-sm text-gray-300">Dokter keluarga sekaligus teman lama. Punya akses ke berbagai obat dan racun.</p>
+                    </div>
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <h3 class="font-bold text-yellow-300">4. Helena Morrison</h3>
+                        <p class="text-sm text-gray-300">Sekretaris pribadi selama 10 tahun. Mengetahui semua rahasia keluarga Blackwood.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Evidence -->
+            <div class="bg-gray-800 rounded-lg p-6 mb-6 fade-in">
+                <h2 class="text-2xl font-bold mb-4 text-green-400">🔍 Barang Bukti</h2>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="text-3xl mb-2">🍷</div>
+                        <h4 class="font-bold">Gelas Wine</h4>
+                        <p class="text-sm text-gray-300">Mengandung arsenik. Sidik jari terhapus.</p>
+                    </div>
+                    <div class="bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="text-3xl mb-2">💊</div>
+                        <h4 class="font-bold">Botol Arsenik</h4>
+                        <p class="text-sm text-gray-300">Ditemukan di kebun. Masih ada sisa.</p>
+                    </div>
+                    <div class="bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="text-3xl mb-2">📄</div>
+                        <h4 class="font-bold">Surat Wasiat</h4>
+                        <p class="text-sm text-gray-300">Baru dibuat minggu lalu. Isinya mengejutkan.</p>
+                    </div>
+                    <div class="bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="text-3xl mb-2">👠</div>
+                        <h4 class="font-bold">Sepatu Hak Tinggi</h4>
+                        <p class="text-sm text-gray-300">Ditemukan di taman dengan tanah segar.</p>
+                    </div>
+                    <div class="bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="text-3xl mb-2">📱</div>
+                        <h4 class="font-bold">Pesan Terakhir</h4>
+                        <p class="text-sm text-gray-300">"Hari ini semuanya akan berubah"</p>
+                    </div>
+                    <div class="bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="text-3xl mb-2">💰</div>
+                        <h4 class="font-bold">Cek Kosong</h4>
+                        <p class="text-sm text-gray-300">Sudah ditandatangani, belum diisi nominal.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Investigation Questions -->
+            <div id="questions" class="space-y-4">
+                <div class="bg-gray-800 rounded-lg p-6 fade-in">
+                    <h2 class="text-2xl font-bold mb-4 text-purple-400">🤔 Investigasi</h2>
+                    
+                    <!-- Question 1 -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-bold mb-3">1. Siapa yang paling memiliki motif kuat untuk membunuh Lord Blackwood?</h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="q1" value="a" class="text-blue-500">
+                                <span>Lady Margaret - karena masalah warisan</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="q1" value="b" class="text-blue-500">
+                                <span>James - karena utang judi yang besar</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="q1" value="c" class="text-blue-500">
+                                <span>Dr. Richards - karena rahasia medis</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="q1" value="d" class="text-blue-500">
+                                <span>Helena - karena mengetahui terlalu banyak rahasia</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Question 2 -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-bold mb-3">2. Mengapa sepatu hak tinggi ditemukan di taman?</h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="q2" value="a" class="text-blue-500">
+                                <span>Pembunuh membuang botol arsenik di sana</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="q2" value="b" class="text-blue-500">
+                                <span>Hanya kebetulan tertinggal</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="q2" value="c" class="text-blue-500">
+                                <span>Pembunuh melarikan diri lewat taman</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="q2" value="d" class="text-blue-500">
+                                <span>Untuk mengalihkan perhatian</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Question 3 -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-bold mb-3">3. Apa arti pesan "Hari ini semuanya akan berubah"?</h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="q3" value="a" class="text-blue-500">
+                                <span>Pembunuh akan mengeksekusi rencananya</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="q3" value="b" class="text-blue-500">
+                                <span>Lord Blackwood akan mengubah wasiat</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="q3" value="c" class="text-blue-500">
+                                <span>Ada perubahan besar dalam keluarga</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="q3" value="d" class="text-blue-500">
+                                <span>Seseorang akan dibongkar rahasianya</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Question 4 -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-bold mb-3">4. Mengapa cek kosong sudah ditandatangani?</h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="q4" value="a" class="text-blue-500">
+                                <span>Lord Blackwood akan membayar utang James</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="q4" value="b" class="text-blue-500">
+                                <span>Untuk membayar seseorang agar diam</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="q4" value="c" class="text-blue-500">
+                                <span>Bonus untuk Helena yang setia</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="q4" value="d" class="text-blue-500">
+                                <span>Hadiah ulang tahun untuk Lady Margaret</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Final Question -->
+                    <div class="mb-6 border-2 border-red-500 p-4 rounded-lg">
+                        <h3 class="text-xl font-bold mb-3 text-red-400">🎯 Siapa pembunuh sebenarnya?</h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="killer" value="margaret" class="text-red-500">
+                                <span>Lady Margaret Blackwood</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="killer" value="james" class="text-red-500">
+                                <span>James Blackwood</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="killer" value="samuel" class="text-red-500">
+                                <span>Dr. Samuel Richards</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-700 p-2 rounded">
+                                <input type="radio" name="killer" value="helena" class="text-red-500">
+                                <span>Helena Morrison</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button onclick="submitAnswer()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200">
+                        🔍 SELESAIKAN KASUS
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let timeLeft = 600; // 10 menit dalam detik
+        let gameEnded = false;
+
+        // Timer function
+        function updateTimer() {
+            if (gameEnded) return;
+            
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            const timerElement = document.getElementById('timer');
+            
+            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (timeLeft <= 60) {
+                timerElement.classList.add('pulse-red');
+            }
+            
+            if (timeLeft <= 0) {
+                gameEnded = true;
+                swal({
+                    title: "⏰ Waktu Habis!",
+                    text: "Anda gagal menyelesaikan kasus dalam waktu yang ditentukan. Kasus ini akan ditutup.",
+                    icon: "error",
+                    button: "Tutup Kasus",
+                    closeOnClickOutside: false,
+                    closeOnEsc: false
+                }).then(() => {
+                    window.location.href = "https://www.google.com";
+                });
+                return;
+            }
+            
+            timeLeft--;
+        }
+
+        // Start timer
+        const timerInterval = setInterval(updateTimer, 1000);
+
+        // Submit answer function
+        function submitAnswer() {
+            if (gameEnded) return;
+
+            const q1 = document.querySelector('input[name="q1"]:checked');
+            const q2 = document.querySelector('input[name="q2"]:checked');
+            const q3 = document.querySelector('input[name="q3"]:checked');
+            const q4 = document.querySelector('input[name="q4"]:checked');
+            const killer = document.querySelector('input[name="killer"]:checked');
+
+            if (!q1 || !q2 || !q3 || !q4 || !killer) {
+                swal({
+                    title: "Investigasi Belum Lengkap",
+                    text: "Anda harus menjawab semua pertanyaan untuk menyelesaikan kasus ini.",
+                    icon: "warning",
+                    button: "Lanjutkan Investigasi"
+                });
+                return;
+            }
+
+            // Correct answers: q1=b (James), q2=a (buang botol), q3=d (rahasia dibongkar), q4=b (bayar diam), killer=helena
+            const correctAnswers = {
+                q1: 'd', // Helena mengetahui rahasia
+                q2: 'a', // Membuang botol arsenik
+                q3: 'd', // Rahasia akan dibongkar
+                q4: 'b', // Membayar seseorang agar diam
+                killer: 'helena'
+            };
+
+            const userAnswers = {
+                q1: q1.value,
+                q2: q2.value,
+                q3: q3.value,
+                q4: q4.value,
+                killer: killer.value
+            };
+
+            // Check if all answers are correct
+            let correctCount = 0;
+            let totalQuestions = 5;
+
+            for (let key in correctAnswers) {
+                if (userAnswers[key] === correctAnswers[key]) {
+                    correctCount++;
+                }
+            }
+
+            gameEnded = true;
+            clearInterval(timerInterval);
+
+            if (correctCount === totalQuestions) {
+                // Perfect score - success
+                swal({
+                    title: "🎉 Kasus Terpecahkan!",
+                    text: "Selamat! Anda berhasil mengungkap bahwa Helena Morrison adalah pembunuhnya. Dia membunuh Lord Blackwood karena takut rahasianya tentang penggelapan uang akan dibongkar. Key: mantap nabila",
+                    icon: "success",
+                    button: "Tutup"
+                });
+            } else if (correctCount >= 3) {
+                // Good enough - partial success
+                swal({
+                    title: "🕵️ Kasus Hampir Terpecahkan",
+                    text: `Anda mendapat ${correctCount} dari ${totalQuestions} jawaban benar. Investigasi cukup baik! Key: mantap nabila`,
+                    icon: "success",
+                    button: "Tutup"
+                });
+            } else {
+                // Failed
+                swal({
+                    title: "❌ Investigasi Gagal",
+                    text: `Anda hanya mendapat ${correctCount} dari ${totalQuestions} jawaban benar. Kasus ini akan ditutup dan diserahkan ke detektif lain.`,
+                    icon: "error",
+                    button: "Tutup Kasus",
+                    closeOnClickOutside: false,
+                    closeOnEsc: false
+                }).then(() => {
+                    window.location.href = "https://www.google.com";
+                });
+            }
+        }
+
+        // Add some interactive elements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add click effects to radio buttons
+            const radioButtons = document.querySelectorAll('input[type="radio"]');
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    // Remove previous selections styling
+                    const sameNameRadios = document.querySelectorAll(`input[name="${this.name}"]`);
+                    sameNameRadios.forEach(r => {
+                        r.parentElement.classList.remove('bg-blue-800', 'border-blue-500');
+                    });
+                    
+                    // Add styling to selected option
+                    this.parentElement.classList.add('bg-blue-800', 'border', 'border-blue-500');
+                });
+            });
+
+            // Add fade-in animation to elements
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('fade-in');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.bg-gray-800').forEach(el => {
+                observer.observe(el);
+            });
+        });
+    </script>
+</body>
+</html>
