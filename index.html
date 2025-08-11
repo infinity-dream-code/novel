@@ -1,109 +1,458 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kasus: Malam di Vila Cempaka — Game Detektif</title>
-  <style>
-    :root{
-      --bg:#0f1115;
-      --panel:#171a20;
-      --muted:#9aa4b2;
-      --text:#eaeef5;
-      --accent:#7c9cff;
-      --accent-2:#62d4a0;
-      --danger:#ff6b6b;
-      --warn:#ffd166;
-      --shadow: 0 8px 24px rgba(0,0,0,.35);
-      --radius:14px;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
-      background: radial-gradient(1200px 800px at 10% -10%, #1d2230 0%, var(--bg) 50%);
-      color:var(--text);
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detective Mystery Game</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    header{
-      position:sticky; top:0; z-index:5;
-      background:linear-gradient(180deg, rgba(15,17,21,.95) 0%, rgba(15,17,21,.6) 100%);
-      backdrop-filter: blur(8px);
-      border-bottom:1px solid rgba(255,255,255,.06);
-    }
-    .wrap{max-width:1200px; margin:0 auto; padding: 16px}
-    .title{
-      display:flex; align-items:center; gap:14px;
-    }
-    .badge{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:6px 10px; border-radius:999px;
-      background:#12151b; border:1px solid rgba(255,255,255,.08);
-      color:var(--muted); font-size:12px; letter-spacing:.3px;
-    }
-    .grid{
-      display:grid; gap:16px; margin:16px auto;
-      grid-template-columns: 1fr;
-    }
-    @media (min-width: 980px){
-      .grid{ grid-template-columns: 1.1fr .9fr }
-    }
+        body {
+            font-family: 'Georgia', serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
 
-    .panel{
-      background:linear-gradient(180deg, #171a20, #141821);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-    .panel h2{ margin:0; font-size:16px; letter-spacing:.4px; color:#c6d2e1; padding:14px 16px; border-bottom:1px solid rgba(255,255,255,.06); background:rgba(255,255,255,.02)}
-    .panel .body{ padding:14px; }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
 
-    .locations{
-      display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px;
-    }
-    @media (min-width: 640px){
-      .locations{ grid-template-columns: repeat(3, minmax(0,1fr));}
-    }
-    .card{
-      background:linear-gradient(180deg,#1b202b,#141821);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:12px; padding:12px; cursor:pointer;
-      display:flex; gap:10px; align-items:center; transition: transform .15s ease, border-color .2s ease;
-      min-height:64px;
-    }
-    .card[aria-disabled="true"]{ opacity:.55; cursor:not-allowed }
-    .card:hover{ transform: translateY(-2px); border-color: rgba(124,156,255,.6)}
-    .card .emoji{ font-size:22px }
-    .card .name{ font-weight:600 }
-    .card small{ color:var(--muted) }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
 
-    .clues{ display:grid; grid-template-columns:1fr; gap:10px }
-    .clue{
-      padding:12px; border:1px dashed rgba(255,255,255,.18);
-      border-radius:10px; background: rgba(255,255,255,.02);
-      display:flex; justify-content:space-between; gap:10px; align-items:flex-start;
-    }
-    .clue .txt{ font-size:14px }
-    .clue button{ white-space:nowrap }
+        .title {
+            font-size: 2.5em;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 10px;
+        }
 
-    .suspects{ display:grid; grid-template-columns:1fr 1fr; gap:10px }
-    @media (min-width: 520px){ .suspects{ grid-template-columns:1fr 1fr 1fr 1fr } }
-    .sus{ background:linear-gradient(180deg,#1b202b,#131822);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:12px; padding:10px; display:flex; gap:10px; align-items:flex-start; position:relative;
-    }
-    .sus .pfp{ font-size:28px; line-height:1 }
-    .sus .nm{ font-weight:700; }
-    .sus .meta{ color:var(--muted); font-size:12px }
-    .tag{
-      display:inline-flex; align-items:center; gap:6px; padding:4px 8px; font-size:11px;
-      border-radius:999px; border:1px solid rgba(255,255,255,.1); color:#cdd7e6; background:rgba(255,255,255,.03)
-    }
-    .tag.ok{ border-color: rgba(98,212,160,.5); color: #bff1db }
-    .tag.no{ border-color: rgba(255,107,107,.5); color: #ffd0d0 }
+        .timer {
+            font-size: 1.5em;
+            color: #ff6b6b;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
 
+        .game-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .story-section, .clues-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .section-title {
+            color: #ffd700;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #ffd700;
+            padding-bottom: 5px;
+        }
+
+        .story-text {
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+
+        .clue-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            border-left: 4px solid #4ecdc4;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .clue-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .clue-collected {
+            border-left-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .suspects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .suspect-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .suspect-card:hover {
+            transform: translateY(-5px);
+            border-color: #ffd700;
+        }
+
+        .suspect-selected {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.2);
+        }
+
+        .suspect-name {
+            font-size: 1.3em;
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .answer-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .solve-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ffd700);
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 25px;
+            cursor: pointer;
+            color: #fff;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .solve-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3);
+        }
+
+        .solve-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ecdc4, #ffd700);
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .hint-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #ffd700;
+            color: #ffd700;
+            padding: 10px 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .hint-btn:hover {
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .game-area {
+                grid-template-columns: 1fr;
+            }
+            
+            .suspects-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+            
+            .title {
+                font-size: 2em;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header fade-in">
+            <h1 class="title">🔍 MYSTERY DETECTIVE GAME</h1>
+            <div class="timer" id="timer">⏰ Waktu Tersisa: 10:00</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress"></div>
+            </div>
+            <p>Selesaikan misteri pembunuhan di mansion sebelum waktu habis!</p>
+        </div>
+
+        <div class="game-area">
+            <div class="story-section fade-in">
+                <h2 class="section-title">📖 Cerita</h2>
+                <div class="story-text" id="story">
+                    <p><strong>Pembunuhan di Blackwood Mansion</strong></p>
+                    <p>Tuan Blackwood, pemilik mansion mewah, ditemukan tewas di perpustakaannya malam ini. Anda adalah detektif yang dipanggil untuk memecahkan kasus ini.</p>
+                    <p>Ada 4 tersangka dan berbagai petunjuk tersebar di mansion. Waktu Anda terbatas - polisi akan datang dalam 10 menit!</p>
+                    <p><em>Klik pada petunjuk untuk mengumpulkannya dan temukan siapa pembunuhnya...</em></p>
+                </div>
+                <button class="hint-btn" onclick="showHint()">💡 Petunjuk</button>
+            </div>
+
+            <div class="clues-section fade-in">
+                <h2 class="section-title">🔍 Petunjuk</h2>
+                <div id="clues-container">
+                    <div class="clue-item" onclick="collectClue(0)" id="clue0">
+                        <strong>🔪 Pisau Berdarah</strong><br>
+                        Ditemukan di dapur dengan sidik jari yang terhapus sebagian
+                    </div>
+                    <div class="clue-item" onclick="collectClue(1)" id="clue1">
+                        <strong>📄 Surat Ancaman</strong><br>
+                        "Kamu akan membayar atas yang telah kamu lakukan!" - Tanpa tanda tangan
+                    </div>
+                    <div class="clue-item" onclick="collectClue(2)" id="clue2">
+                        <strong>💰 Cek Kosong</strong><br>
+                        Cek senilai $50,000 yang belum ditandatangani di meja korban
+                    </div>
+                    <div class="clue-item" onclick="collectClue(3)" id="clue3">
+                        <strong>🚬 Puntung Rokok</strong><br>
+                        Merek mahal ditemukan di teras, masih hangat
+                    </div>
+                    <div class="clue-item" onclick="collectClue(4)" id="clue4">
+                        <strong>👠 Sepatu Hak Tinggi</strong><br>
+                        Sepatu wanita dengan bercak darah di bawah tangga
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="suspects-grid fade-in">
+            <div class="suspect-card" onclick="selectSuspect(0)" id="suspect0">
+                <div class="suspect-name">👨‍💼 James Butler</div>
+                <p><strong>Kepala Pelayan</strong></p>
+                <p>Bekerja 20 tahun, akses ke seluruh rumah. Terlihat gugup malam ini.</p>
+            </div>
+            <div class="suspect-card" onclick="selectSuspect(1)" id="suspect1">
+                <div class="suspect-name">💃 Victoria Blackwood</div>
+                <p><strong>Istri Muda</strong></p>
+                <p>Menikah 2 tahun lalu. Sering bertengkar dengan suami tentang uang.</p>
+            </div>
+            <div class="suspect-card" onclick="selectSuspect(2)" id="suspect2">
+                <div class="suspect-name">🎓 Dr. Harrison</div>
+                <p><strong>Partner Bisnis</strong></p>
+                <p>Investor besar yang baru saja kehilangan banyak uang dalam bisnis bersama.</p>
+            </div>
+            <div class="suspect-card" onclick="selectSuspect(3)" id="suspect3">
+                <div class="suspect-name">👨‍🍳 Marco Chef</div>
+                <p><strong>Chef Pribadi</strong></p>
+                <p>Baru bekerja 3 bulan. Memiliki masa lalu kriminal yang disembunyikan.</p>
+            </div>
+        </div>
+
+        <div class="answer-section fade-in">
+            <h2 class="section-title">⚖️ Solusi Anda</h2>
+            <p id="selection-text">Pilih tersangka dan kumpulkan petunjuk untuk menyelesaikan kasus!</p>
+            <button class="solve-btn" onclick="solveCase()" id="solve-button" disabled>
+                🎯 SELESAIKAN KASUS
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let gameData = {
+            timeLeft: 600, // 10 minutes in seconds
+            cluesCollected: [],
+            selectedSuspect: -1,
+            gameEnded: false,
+            correctSuspect: 1, // Victoria Blackwood (index 1)
+            requiredClues: [1, 2, 4] // Surat ancaman, Cek kosong, Sepatu hak tinggi
+        };
+
+        const suspects = [
+            "James Butler", "Victoria Blackwood", "Dr. Harrison", "Marco Chef"
+        ];
+
+        let timerInterval;
+
+        // Start the game timer
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (gameData.gameEnded) {
+                    clearInterval(timerInterval);
+                    return;
+                }
+
+                gameData.timeLeft--;
+                updateTimerDisplay();
+                updateProgress();
+
+                if (gameData.timeLeft <= 0) {
+                    gameOver();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(gameData.timeLeft / 60);
+            const seconds = gameData.timeLeft % 60;
+            const display = `⏰ Waktu Tersisa: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('timer').textContent = display;
+            
+            // Change color when time is running low
+            const timerElement = document.getElementById('timer');
+            if (gameData.timeLeft < 120) { // Less than 2 minutes
+                timerElement.style.color = '#ff4757';
+                timerElement.classList.add('pulse');
+            } else if (gameData.timeLeft < 300) { // Less than 5 minutes
+                timerElement.style.color = '#ffa726';
+            }
+        }
+
+        function updateProgress() {
+            const totalRequiredActions = 4; // 3 correct clues + 1 correct suspect
+            const completedActions = gameData.cluesCollected.filter(clue => 
+                gameData.requiredClues.includes(clue)).length + 
+                (gameData.selectedSuspect === gameData.correctSuspect ? 1 : 0);
+            
+            const progress = (completedActions / totalRequiredActions) * 100;
+            document.getElementById('progress').style.width = progress + '%';
+        }
+
+        function collectClue(clueIndex) {
+            if (gameData.cluesCollected.includes(clueIndex) || gameData.gameEnded) {
+                return;
+            }
+
+            gameData.cluesCollected.push(clueIndex);
+            const clueElement = document.getElementById(`clue${clueIndex}`);
+            clueElement.classList.add('clue-collected');
+            
+            // Add collection animation
+            clueElement.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                clueElement.style.transform = 'scale(1)';
+            }, 200);
+
+            updateProgress();
+            checkCanSolve();
+            
+            // Show clue-specific feedback
+            showClueMessage(clueIndex);
+        }
+
+        function showClueMessage(clueIndex) {
+            const messages = [
+                "Pisau pembunuh... tapi siapa yang menggunakannya?",
+                "Surat ancaman ini pasti dari seseorang yang dendam!",
+                "Cek besar... mungkin motif pembunuhan?",
+                "Rokok mahal... tersangka mana yang merokok?",
+                "Sepatu wanita... ini milik siapa?"
+            ];
+            
+            swal({
+                title: "Petunjuk Terkumpul!",
+                text: messages[clueIndex],
+                icon: "info",
+                button: "Lanjutkan Investigasi",
+                timer: 2000
+            });
+        }
+
+        function selectSuspect(suspectIndex) {
+            if (gameData.gameEnded) return;
+
+            // Remove previous selection
+            document.querySelectorAll('.suspect-card').forEach(card => {
+                card.classList.remove('suspect-selected');
+            });
+
+            // Add selection to clicked suspect
+            gameData.selectedSuspect = suspectIndex;
+            document.getElementById(`suspect${suspectIndex}`).classList.add('suspect-selected');
+            
+            updateSelectionText();
+            updateProgress();
+            checkCanSolve();
+        }
+
+        function updateSelectionText() {
+            const text = gameData.selectedSuspect !== -1 
+                ? `Tersangka terpilih: ${suspects[gameData.selectedSuspect]} | Petunjuk terkumpul: ${gameData.cluesCollected.length}/5`
+                : `Pilih tersangka dan kumpulkan petunjuk untuk menyelesaikan kasus!`;
+            
+            document.getElementById('selection-text').textContent = text;
+        }
+
+        function checkCanSolve() {
+            const hasCorrectClues = gameData.requiredClues.every(clue => 
+                gameData.cluesCollected.includes(clue));
+            const hasSuspect = gameData.selectedSuspect !== -1;
+            
+            document.getElementById('solve-button').disabled = !(hasCorrectClues && hasSuspect);
+        }
+
+        function solveCase() {
+            if (gameData.gameEnded) return;
+            
+            gameData.gameEnded = true;
+            clearInterval(timerInterval);
+
+            const hasCorrectClues = gameData.requiredClues.every(clue => 
+                gameData.cluesCollected.includes(clue));
     .toolbar{ display:flex; gap:10px; flex-wrap:wrap; }
     button{
       appearance:none; border:1px solid rgba(255,255,255,.1); background: #11151d;
@@ -591,3 +940,4 @@
   </script>
 </body>
 </html>
+
