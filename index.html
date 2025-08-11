@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misteri Keluarga: Warisan yang Terkutuk</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .typewriter {
+            overflow: hidden;
+            border-right: .15em solid #fbbf24;
+            white-space: nowrap;
+            margin: 0 auto;
+            letter-spacing: .15em;
+            animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+        }
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: #fbbf24; }
+        }
+        .evidence-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .suspect-card:hover {
+            transform: scale(1.02);
+        }
+        .pulse-red {
+            animation: pulse-red 2s infinite;
+        }
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-blue-900 to-black text-white">
+    <!-- Timer Display -->
+    <div class="fixed top-4 right-4 z-50">
+        <div id="timer" class="bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-xl pulse-red">
+            10:00
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div id="gameContainer" class="min-h-screen">
+        <!-- Welcome Screen -->
+        <div id="welcomeScreen" class="flex items-center justify-center min-h-screen">
+            <div class="text-center max-w-2xl px-6">
+                <h1 class="text-5xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-500">
+                    🏚️ Misteri Keluarga 💰
+                </h1>
+                <h2 class="text-2xl mb-4 typewriter">Warisan yang Terkutuk</h2>
+                <p class="text-lg mb-8 text-gray-300">
+                    Paman Richard ditemukan tewas di perpustakaan mansion tuanya malam setelah mengumumkan akan mengubah surat wasiat. 
+                    Tiga keponakan menunggu warisan, tapi siapa yang tega membunuh?
+                </p>
+                <button id="startBtn" class="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 rounded-full text-xl transform hover:scale-105 transition-all duration-300 shadow-lg">
+                    🔍 Mulai Investigasi
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="hidden">
+            <!-- Header -->
+            <header class="bg-black bg-opacity-50 p-6">
+                <h1 class="text-3xl font-bold text-center text-yellow-400">🔍 INVESTIGASI MANSION HARTWELL 🔍</h1>
+                <p class="text-center text-gray-300 mt-2">Temukan pembunuh sebelum mereka melarikan diri dengan warisan!</p>
+            </header>
+
+            <!-- Game Content -->
+            <div class="container mx-auto px-4 py-8">
+                <!-- Crime Scene -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold mb-4 text-yellow-400">🏚️ Lokasi Kejadian</h2>
+                    <div class="bg-gray-800 bg-opacity-80 rounded-lg p-6 border-2 border-yellow-500">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <h3 class="text-xl font-semibold mb-3 text-yellow-300">Korban:</h3>
+                                <div class="space-y-2">
+                                    <p>👨‍🦳 <strong>Richard Hartwell</strong> (65) - Pengusaha kaya</p>
+                                    <p>💰 Kekayaan: 50 Miliar Rupiah</p>
+                                    <p>🏚️ Tinggal sendirian di mansion tua</p>
+                                    <p>⚰️ Ditemukan tewas di perpustakaan pukul 07:00</p>
+                                    <p>📜 Kemarin malam mengumumkan akan ubah wasiat</p>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold mb-3 text-yellow-300">Kondisi TKP:</h3>
+                                <div class="space-y-2">
+                                    <p>📚 Ditemukan terjatuh di depan rak buku</p>
+                                    <p>☕ Cangkir kopi masih hangat di meja</p>
+                                    <p>🔦 Senter menyala di lantai dekat tubuh</p>
+                                    <p>📄 Kertas berserakan, seperti sedang mencari sesuatu</p>
+                                    <p>🚪 Jendela terbuka, tirai bergoyang</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Evidence Section -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold mb-4 text-green-400">🔍 Bukti-bukti</h2>
+                    <div class="grid md:grid-cols-3 gap-4" id="evidenceGrid">
+                        <!-- Evidence cards will be generated here -->
+                    </div>
+                </div>
+
+                <!-- Suspects Section -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold mb-4 text-red-400">👤 Para Tersangka</h2>
+                    <div class="grid md:grid-cols-3 gap-4" id="suspectsGrid">
+                        <!-- Suspect cards will be generated here -->
+                    </div>
+                </div>
+
+                <!-- Investigation Panel -->
+                <div class="bg-gray-800 bg-opacity-80 rounded-lg p-6 border-2 border-purple-500">
+                    <h2 class="text-2xl font-bold mb-4 text-purple-400">🧠 Panel Investigasi</h2>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">Catatan Detektif:</h3>
+                            <div id="cluesFound" class="bg-gray-700 p-4 rounded min-h-32 max-h-32 overflow-y-auto text-sm">
+                                Mulai mengumpulkan bukti...
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">Tuduh Pembunuh:</h3>
+                            <select id="accuseSelect" class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white mb-4">
+                                <option value="">Pilih tersangka...</option>
+                            </select>
+                            <button id="accuseBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors">
+                                ⚖️ TUDUH SEBAGAI PEMBUNUH!
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let gameState = {
+            timeLeft: 600, // 10 minutes in seconds
+            evidenceFound: [],
+            cluesDiscovered: [],
+            gameStarted: false,
+            timerInterval: null
+        };
+
+        // Evidence Data
+        const evidenceData = [
+            {
+                id: 'coffee',
+                name: '☕ Cangkir Kopi',
+                description: 'Kopi hitam masih hangat. Di dasar cangkir ada endapan putih yang tidak biasa, bukan gula biasa.',
+                clue: 'Ada zat asing dalam kopi. Seseorang meracuni Paman Richard!'
+            },
+            {
+                id: 'flashlight',
+                name: '🔦 Senter',
+                description: 'Senter LED masih menyala di lantai. Baterai hampir habis, seperti sudah dipakai lama malam itu.',
+                clue: 'Paman Richard mencari sesuatu dalam gelap sebelum mati. Ada yang mematikan listrik?'
+            },
+            {
+                id: 'ladder',
+                name: '🪜 Tangga Kecil',
+                description: 'Tangga lipat bekas di pojok ruangan, posisinya aneh. Ada bekas tangan berkeringat di pegangan.',
+                clue: 'Seseorang menggunakan tangga ini untuk mencapai rak tinggi. Mencari apa?'
+            },
+            {
+                id: 'will',
+                name: '📜 Draft Surat Wasiat',
+                description: 'Draft surat wasiat baru di laci meja, belum ditandatangani. Semua harta akan diberikan ke panti asuhan.',
+                clue: 'Paman Richard akan berikan semua harta ke panti asuhan! Keponakan tidak dapat apa-apa.'
+            },
+            {
+                id: 'photo',
+                name: '📸 Foto Keluarga',
+                description: 'Foto keluarga lama di lantai, kaca pecah. Wajah salah satu keponakan dicoret dengan pulpen.',
+                clue: 'Paman Richard coret wajah seseorang dalam foto. Ada konflik dengan keponakan tertentu?'
+            },
+            {
+                id: 'medicine',
+                name: '💊 Obat Jantung',
+                description: 'Botol obat jantung Paman Richard kosong di rak. Seharusnya masih ada 10 tablet tersisa.',
+                clue: 'Obat jantung hilang semua. Overdosis obat jantung bisa menyebabkan kematian mendadak!'
+            }
+        ];
+
+        // Suspects Data
+        const suspectsData = [
+            {
+                id: 'amanda',
+                name: 'Amanda Hartwell',
+                age: 35,
+                relation: 'Keponakan Tertua',
+                description: 'Dokter sukses, anak dari kakak Richard. Baru saja bercerai dan butuh uang untuk biaya pengacara.',
+                motive: 'Kebutuhan uang mendesak',
+                alibi: 'Mengaku pulang langsung setelah makan malam keluarga',
+                secret: 'Amanda tahu tentang obat jantung Paman Richard dan dosisnya karena dia dokter. Kemarin mereka bertengkar soal perceraian.'
+            },
+            {
+                id: 'ben',
+                name: 'Benjamin Hartwell',
+                age: 28,
+                relation: 'Keponakan Tengah',
+                description: 'Pengusaha muda yang bisnis nya bangkrut. Sering meminjam uang dari Paman Richard dan selalu ditolak.',
+                motive: 'Utang dan kebangkrutan',
+                alibi: 'Bilang tidur di kamar tamu mansion sampai pagi',
+                secret: 'Ben bangkrut total dan punya utang 2 miliar. Kemarin dia memohon pada Paman Richard tapi malah dimarahi habis-habisan.'
+            },
+            {
+                id: 'chloe',
+                name: 'Chloe Hartwell',
+                age: 23,
+                relation: 'Keponakan Bungsu',
+                description: 'Mahasiswa seni yang hobi fotografi. Paling dekat dengan Paman Richard, sering berkunjung ke mansion.',
+                motive: 'Cinta atau dendam',
+                alibi: 'Bilang tidak tidur, jalan-jalan di taman mansion malam itu',
+                secret: 'Chloe yang wajahnya dicoret dalam foto keluarga. Ternyata Paman Richard marah karena tahu Chloe pakai narkoba dan mau dicoret dari wasiat.'
+            }
+        ];
+
+        // Timer Function
+        function startTimer() {
+            gameState.timerInterval = setInterval(() => {
+                gameState.timeLeft--;
+                const minutes = Math.floor(gameState.timeLeft / 60);
+                const seconds = gameState.timeLeft % 60;
+                document.getElementById('timer').textContent = 
+                    `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (gameState.timeLeft <= 60) {
+                    document.getElementById('timer').classList.add('animate-pulse');
+                }
+                
+                if (gameState.timeLeft <= 0) {
+                    gameOver(false);
+                }
+            }, 1000);
+        }
+
+        // Initialize Evidence
+        function initializeEvidence() {
+            const grid = document.getElementById('evidenceGrid');
+            evidenceData.forEach(evidence => {
+                const card = document.createElement('div');
+                card.className = 'evidence-card bg-gray-800 bg-opacity-60 rounded-lg p-4 border-2 border-green-500 cursor-pointer transform transition-all duration-300 hover:bg-opacity-80';
+                card.innerHTML = `
+                    <div class="text-2xl mb-2">${evidence.name}</div>
+                    <p class="text-sm text-gray-300">${evidence.description}</p>
+                `;
+                card.onclick = () => examineEvidence(evidence);
+                grid.appendChild(card);
+            });
+        }
+
+        // Initialize Suspects
+        function initializeSuspects() {
+            const grid = document.getElementById('suspectsGrid');
+            const select = document.getElementById('accuseSelect');
+            
+            suspectsData.forEach(suspect => {
+                // Create suspect card
+                const card = document.createElement('div');
+                card.className = 'suspect-card bg-gray-800 bg-opacity-60 rounded-lg p-4 border-2 border-red-500 cursor-pointer transform transition-all duration-300';
+                card.innerHTML = `
+                    <div class="text-center mb-2">
+                        <div class="text-4xl mb-2">
+                            ${suspect.name === 'Amanda Hartwell' ? '👩‍⚕️' : 
+                              suspect.name === 'Benjamin Hartwell' ? '👨‍💼' : '👩‍🎨'}
+                        </div>
+                        <h3 class="font-bold">${suspect.name}</h3>
+                        <p class="text-sm text-gray-400">${suspect.age} tahun</p>
+                        <p class="text-sm text-red-300">${suspect.relation}</p>
+                    </div>
+                    <p class="text-xs text-gray-300 mt-2">${suspect.description}</p>
+                `;
+                card.onclick = () => interrogateSuspect(suspect);
+                grid.appendChild(card);
+
+                // Add to accusation select
+                const option = document.createElement('option');
+                option.value = suspect.id;
+                option.textContent = suspect.name;
+                select.appendChild(option);
+            });
+        }
+
+        // Examine Evidence
+        function examineEvidence(evidence) {
+            if (gameState.evidenceFound.includes(evidence.id)) return;
+            
+            gameState.evidenceFound.push(evidence.id);
+            gameState.cluesDiscovered.push(evidence.clue);
+            
+            Swal.fire({
+                title: 'Bukti Ditemukan!',
+                html: `<strong>${evidence.name}</strong><br><br>${evidence.description}<br><br><em style="color: #fbbf24;">"${evidence.clue}"</em>`,
+                icon: 'info',
+                background: '#1f2937',
+                color: '#fff',
+                confirmButtonColor: '#ef4444'
+            });
+            
+            updateCluesDisplay();
+        }
+
+        // Interrogate Suspect
+        function interrogateSuspect(suspect) {
+            const questionsAsked = gameState[`${suspect.id}_questioned`] || 0;
+            const questions = [
+                {
+                    q: `Dimana Anda malam kejadian?`,
+                    a: suspect.alibi
+                },
+                {
+                    q: `Apa hubungan Anda dengan Paman Richard?`,
+                    a: `Saya ${suspect.relation.toLowerCase()}, ${suspect.description}`
+                },
+                {
+                    q: `Apakah Anda menyembunyikan sesuatu?`,
+                    a: suspect.secret
+                }
+            ];
+            
+            if (questionsAsked < questions.length) {
+                const currentQ = questions[questionsAsked];
+                gameState[`${suspect.id}_questioned`] = questionsAsked + 1;
+                
+                Swal.fire({
+                    title: `Interogasi: ${suspect.name}`,
+                    html: `<strong>Pertanyaan:</strong> ${currentQ.q}<br><br><strong>Jawaban:</strong> "${currentQ.a}"`,
+                    icon: 'question',
+                    background: '#1f2937',
+                    color: '#fff',
+                    confirmButtonColor: '#ef4444'
+                });
+                
+                if (questionsAsked === 2) {
+                    gameState.cluesDiscovered.push(`Rahasia ${suspect.name}: ${suspect.secret}`);
+                    updateCluesDisplay();
+                }
+            } else {
+                Swal.fire({
+                    title: 'Interogasi Selesai',
+                    text: 'Anda sudah menanyakan semua pertanyaan kepada tersangka ini.',
+                    icon: 'info',
+                    background: '#1f2937',
+                    color: '#fff',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+        }
+
+        // Update Clues Display
+        function updateCluesDisplay() {
+            const cluesDiv = document.getElementById('cluesFound');
+            if (gameState.cluesDiscovered.length > 0) {
+                cluesDiv.innerHTML = gameState.cluesDiscovered.map((clue, index) => 
+                    `<div class="mb-2 p-2 bg-gray-600 rounded">• ${clue}</div>`
+                ).join('');
+            }
+        }
+
+        // Accusation Logic
+        function makeAccusation() {
+            const accused = document.getElementById('accuseSelect').value;
+            if (!accused) {
+                Swal.fire('Pilih Tersangka!', 'Anda harus memilih tersangka terlebih dahulu.', 'warning');
+                return;
+            }
+
+            // Amanda is the killer
+            if (accused === 'amanda') {
+                gameOver(true);
+            } else {
+                Swal.fire({
+                    title: 'Tuduhan Salah!',
+                    text: 'Anda menuduh orang yang salah. Waktu terus berjalan!',
+                    icon: 'error',
+                    background: '#1f2937',
+                    color: '#fff',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+        }
+
+        // Game Over
+        function gameOver(won) {
+            clearInterval(gameState.timerInterval);
+            
+            if (won) {
+                Swal.fire({
+                    title: '🎉 KASUS TERPECAHKAN! 🎉',
+                    html: `
+                        <div style="text-align: left;">
+                            <p><strong>Pembunuh:</strong> Dr. Amanda Hartwell</p><br>
+                            <p><strong>Motif:</strong> Amanda butuh uang untuk biaya perceraian yang mahal. Ketika tahu Paman Richard akan berikan semua harta ke panti asuhan, dia panik.</p><br>
+                            <p><strong>Cara Pembunuhan:</strong></p>
+                            <p>1. <strong>Makan malam keluarga:</strong> Paman Richard umumkan akan ubah wasiat</p>
+                            <p>2. <strong>Amanda kembali diam-diam:</strong> Masuk lewat jendela yang dibuka sebelumnya</p>
+                            <p>3. <strong>Matikan listrik:</strong> Paksa Paman Richard pakai senter</p>
+                            <p>4. <strong>Racuni kopi:</strong> Masukkan semua obat jantung ke cangkir kopi</p>
+                            <p>5. <strong>Cari surat wasiat:</strong> Paksa Paman Richard cari draft wasiat dengan ancaman</p>
+                            <p>6. <strong>Overdosis:</strong> Obat jantung berlebihan sebabkan serangan jantung fatal</p>
+                            <p>7. <strong>Kabur lewat jendela:</strong> Tinggalkan seperti kematian alami</p><br>
+                            <p><strong>Bukti Utama:</strong> Pengetahuan medis + akses ke obat + motif keuangan + wajah dicoret karena konflik kemarin</p><br>
+                            <p><strong>Kunci Rahasia:</strong> <span style="color: #fbbf24; font-weight: bold;">"i L you"</span></p>
+                        </div>
+                    `,
+                    icon: 'success',
+                    background: '#1f2937',
+                    color: '#fff',
+                    confirmButtonColor: '#ef4444',
+                    allowOutsideClick: false
+                }).then(() => {
+                    // Show love message
+                    Swal.fire({
+                        title: 'Pesan Khusus',
+                        text: 'selamat kamu berhasil memecahkan teka-teki nya nabila',
+                        icon: 'success',
+                        background: '#1f2937',
+                        color: '#fbbf24',
+                        confirmButtonColor: '#ef4444'
+                    });
+                });
+            } else {
+                Swal.fire({
+                    title: '💀 WAKTU HABIS! 💀',
+                    text: 'Pembunuh berhasil melarikan diri dengan warisan! Kasus ini akan tetap menjadi misteri...',
+                    icon: 'error',
+                    background: '#1f2937',
+                    color: '#fff',
+                    confirmButtonColor: '#ef4444',
+                    allowOutsideClick: false
+                }).then(() => {
+                    window.location.href = 'https://google.com';
+                });
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('startBtn').addEventListener('click', () => {
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+            gameState.gameStarted = true;
+            startTimer();
+        });
+
+        document.getElementById('accuseBtn').addEventListener('click', makeAccusation);
+
+        // Initialize Game
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeEvidence();
+            initializeSuspects();
+        });
+    </script>
+</body>
+</html>
